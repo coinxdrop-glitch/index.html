@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
   :root {
@@ -31,6 +32,21 @@
     --shadow: 0 8px 32px rgba(0,0,0,0.4);
     --shadow-accent: 0 4px 20px rgba(0, 212, 170, 0.3);
     --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --login-bg: #0a0a0f;
+    --login-surface: #111118;
+    --login-surface-2: #18181f;
+    --login-border: rgba(255, 255, 255, 0.07);
+    --login-border-hover: rgba(124, 111, 255, 0.35);
+    --login-accent: #7c6fff;
+    --login-accent-dim: rgba(124, 111, 255, 0.15);
+    --login-text-primary: #f0eeff;
+    --login-text-secondary: #8b8aa0;
+    --login-text-muted: #4a4862;
+    --login-error: #f87171;
+    --login-radius-card: 20px;
+    --login-radius-btn: 14px;
+    --login-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --login-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
@@ -467,6 +483,198 @@
   }
   .empty-state i { font-size: 48px; margin-bottom: 16px; }
   .empty-state p { font-size: 14px; }
+
+  /* Login Popup Styles */
+  .login-popup-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s var(--login-ease-out), visibility 0.35s;
+  }
+  .login-popup-overlay.show {
+    opacity: 1;
+    visibility: visible;
+  }
+  .login-popup-card {
+    width: 100%;
+    max-width: 380px;
+    margin: 16px;
+    background: var(--login-surface);
+    border: 1px solid var(--login-border);
+    border-radius: var(--login-radius-card);
+    padding: 32px 24px 28px;
+    position: relative;
+    overflow: hidden;
+    transform: translateY(20px) scale(0.95);
+    transition: transform 0.4s var(--login-ease-spring);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 80px rgba(124,111,255,0.06);
+  }
+  .login-popup-overlay.show .login-popup-card {
+    transform: translateY(0) scale(1);
+  }
+  .login-popup-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--login-radius-card);
+    background: linear-gradient(135deg, rgba(124, 111, 255, 0.06) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .login-popup-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: none; border: none;
+    color: var(--login-text-muted);
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10;
+    transition: color 0.2s;
+  }
+  .login-popup-close:hover { color: var(--login-text-primary); }
+  .login-popup-content {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .login-popup-icon {
+    width: 52px; height: 52px;
+    background: var(--login-surface-2);
+    border: 1px solid var(--login-border);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    color: var(--login-accent);
+    font-size: 22px;
+  }
+  .login-popup-heading {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--login-text-primary);
+    margin-bottom: 6px;
+    letter-spacing: -0.03em;
+  }
+  .login-popup-sub {
+    font-size: 14px;
+    color: var(--login-text-secondary);
+    margin-bottom: 24px;
+    text-align: center;
+    line-height: 1.5;
+  }
+  .login-popup-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    width: 100%;
+  }
+  .login-popup-divider-line {
+    flex: 1;
+    height: 1px;
+    background: var(--login-border);
+  }
+  .login-popup-divider-text {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--login-text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .login-google-btn {
+    position: relative;
+    width: 100%;
+    background: var(--login-surface-2);
+    border: 1px solid var(--login-border);
+    border-radius: var(--login-radius-btn);
+    padding: 0;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s var(--login-ease-spring), background 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    min-height: 52px;
+  }
+  .login-google-btn:hover {
+    border-color: var(--login-border-hover);
+    background: #1c1c26;
+    box-shadow: 0 0 0 3px var(--login-accent-dim), 0 4px 20px rgba(0,0,0,0.3);
+    transform: translateY(-1px);
+  }
+  .login-google-btn:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 0 0 2px var(--login-accent-dim);
+  }
+  .login-google-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  .login-google-btn-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 13px 20px;
+  }
+  .login-google-logo {
+    width: 20px; height: 20px; flex-shrink: 0;
+  }
+  .login-google-btn-label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--login-text-primary);
+    letter-spacing: -0.01em;
+    transition: opacity 0.2s;
+  }
+  .login-btn-spinner {
+    width: 20px; height: 20px; flex-shrink: 0;
+    display: none; align-items: center; justify-content: center;
+  }
+  .login-btn-spinner svg {
+    width: 20px; height: 20px;
+    animation: spin-btn 0.9s linear infinite;
+  }
+  @keyframes spin-btn {
+    100% { transform: rotate(360deg); }
+  }
+  .login-google-btn.loading .login-btn-spinner { display: flex; }
+  .login-google-btn.loading .login-google-logo { opacity: 0.4; }
+  .login-popup-error {
+    display: none;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(248, 113, 113, 0.08);
+    border: 1px solid rgba(248, 113, 113, 0.2);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-top: 16px;
+    width: 100%;
+    animation: slide-in 0.25s var(--login-ease-out);
+  }
+  .login-popup-error.show { display: flex; }
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .login-popup-error-icon {
+    width: 18px; height: 18px; flex-shrink: 0;
+    color: var(--login-error); margin-top: 1px;
+  }
+  .login-popup-error-text {
+    font-size: 13px; color: var(--login-error); line-height: 1.5;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
@@ -514,17 +722,17 @@
       <i class="fas fa-home"></i>
       <span>Home</span>
     </a>
-    <a class="nav-item" href="wallet.html" aria-label="Wallet">
+    <a class="nav-item" href="wallet.html" onclick="requireAuth(event)" aria-label="Wallet">
       <i class="fas fa-wallet"></i>
       <span>Wallet</span>
     </a>
-    <a class="nav-item upload-btn" href="upload.html" aria-label="Upload">
+    <a class="nav-item upload-btn" href="upload.html" onclick="requireAuth(event)" aria-label="Upload">
       <div class="upload-icon-wrap">
         <i class="fas fa-plus"></i>
       </div>
       <span>Upload</span>
     </a>
-    <a class="nav-item" href="referral.html" aria-label="Referral">
+    <a class="nav-item" href="referral.html" onclick="requireAuth(event)" aria-label="Referral">
       <i class="fas fa-gift"></i>
       <span>Invite</span>
     </a>
@@ -538,6 +746,49 @@
     <div class="modal-sheet" id="modalSheet" onclick="event.stopPropagation()">
       <div class="modal-handle"></div>
       <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <div class="login-popup-overlay" id="loginPopupOverlay">
+    <div class="login-popup-card">
+      <button class="login-popup-close" onclick="closeLoginPopup()"><i class="fas fa-times"></i></button>
+      <div class="login-popup-content">
+        <div class="login-popup-icon">
+          <i class="fas fa-lock"></i>
+        </div>
+        <div class="login-popup-heading">Sign in required</div>
+        <div class="login-popup-sub">You need an account to interact with posts, use the wallet, or invite friends.</div>
+        <div class="login-popup-divider">
+          <span class="login-popup-divider-line"></span>
+          <span class="login-popup-divider-text">continue with</span>
+          <span class="login-popup-divider-line"></span>
+        </div>
+        <button class="login-google-btn" id="popupGoogleBtn" type="button">
+          <span class="login-google-btn-inner">
+            <svg class="login-google-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" aria-hidden="true">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+              <path fill="none" d="M0 0h48v48H0z"/>
+            </svg>
+            <span class="login-google-btn-label" id="popupGoogleBtnLabel">Sign in with Google</span>
+            <span class="login-btn-spinner" id="popupBtnSpinner" aria-hidden="true">
+              <svg viewBox="0 0 20 20" fill="none">
+                <circle cx="10" cy="10" r="8" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
+                <path d="M10 2a8 8 0 0 1 8 8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+          </span>
+        </button>
+        <div class="login-popup-error" id="loginPopupError">
+          <svg class="login-popup-error-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M10 6v4m0 3.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span class="login-popup-error-text" id="loginPopupErrorText"></span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -556,6 +807,7 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 const db = firebase.database();
 
 let currentUserId = null;
@@ -571,51 +823,145 @@ function initUser() {
           currentUserData = snap.val();
           resolve();
         } else {
-          registerNewUser(resolve);
+          currentUserId = null;
+          currentUserData = null;
+          resolve();
         }
       });
     } else {
-      registerNewUser(resolve);
+      currentUserId = null;
+      currentUserData = null;
+      resolve();
     }
   });
 }
 
-function registerNewUser(resolve) {
-  var isTelegram = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData;
-  var userData = {};
-
-  if (isTelegram) {
-    var tgUser = window.Telegram.WebApp.initDataUnsafe.user;
-    currentUserId = 'tg_' + tgUser.id;
-    userData = {
-      username: tgUser.username || 'tg_user_' + tgUser.id,
-      displayName: tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : ''),
-      avatar: tgUser.photo_url || '',
-      platform: 'telegram',
-      telegramId: String(tgUser.id),
-      bio: '',
-      profileLink: '',
-      createdAt: Date.now()
-    };
-  } else {
-    currentUserId = 'br_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    userData = {
-      username: 'user_' + Math.random().toString(36).substr(2, 8),
-      displayName: 'New User',
-      avatar: '',
-      platform: 'browser',
-      telegramId: '',
-      bio: '',
-      profileLink: '',
-      createdAt: Date.now()
-    };
-  }
-
-  db.ref('users/' + currentUserId).set(userData);
-  localStorage.setItem('coinxdrop_uid', currentUserId);
-  currentUserData = userData;
-  resolve();
+function showLoginPopup() {
+  document.getElementById('loginPopupOverlay').classList.add('show');
 }
+
+function closeLoginPopup() {
+  document.getElementById('loginPopupOverlay').classList.remove('show');
+  hideLoginPopupError();
+}
+
+function hideLoginPopupError() {
+  document.getElementById('loginPopupError').classList.remove('show');
+  document.getElementById('loginPopupErrorText').textContent = '';
+}
+
+function showLoginPopupError(message) {
+  document.getElementById('loginPopupErrorText').textContent = message;
+  document.getElementById('loginPopupError').classList.add('show');
+}
+
+function setPopupButtonLoading(isLoading) {
+  var btn = document.getElementById('popupGoogleBtn');
+  var label = document.getElementById('popupGoogleBtnLabel');
+  btn.disabled = isLoading;
+  btn.classList.toggle('loading', isLoading);
+  label.textContent = isLoading ? 'Signing in…' : 'Sign in with Google';
+}
+
+function friendlyError(err) {
+  var map = {
+    "auth/popup-blocked": "Your browser blocked the sign-in popup. Please allow popups for this site and try again.",
+    "auth/popup-closed-by-user": "The sign-in window was closed before completing. Please try again.",
+    "auth/cancelled-popup-request": "Only one sign-in window can be open at a time.",
+    "auth/network-request-failed": "A network error occurred. Check your connection and try again.",
+    "auth/user-disabled": "This account has been disabled. Contact support for help.",
+    "auth/account-exists-with-different-credential": "An account already exists with this email using a different sign-in method.",
+    "auth/operation-not-allowed": "Google sign-in is not enabled. Please contact the administrator.",
+    "auth/too-many-requests": "Too many attempts. Please wait a moment and try again.",
+    "auth/internal-error": "An internal error occurred. Please try again.",
+  };
+  return map[err.code] || ('Sign-in failed: ' + (err.message || 'Unknown error.'));
+}
+
+function isMobileBrowser() {
+  var ua = navigator.userAgent || "";
+  return /android|iphone|ipad|ipod|webos|blackberry|windows phone/i.test(ua)
+      || /FBAN|FBAV|Instagram|Line|Twitter|MicroMessenger/i.test(ua)
+      || (typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches);
+}
+
+async function saveUserToDatabase(user) {
+  var userRef = db.ref('users/' + user.uid);
+  try {
+    var snapshot = await userRef.once('value');
+    if (snapshot.exists()) {
+      await userRef.update({ lastLoginAt: new Date().toISOString() });
+    } else {
+      var providerData = user.providerData[0] || {};
+      await userRef.set({
+        uid: user.uid,
+        username: user.displayName || providerData.displayName || 'user_' + Math.random().toString(36).substr(2, 8),
+        displayName: user.displayName || providerData.displayName || 'New User',
+        email: user.email || providerData.email || null,
+        avatar: user.photoURL || providerData.photoURL || '',
+        provider: providerData.providerId || 'google.com',
+        bio: '',
+        profileLink: '',
+        createdAt: user.metadata.creationTime || new Date().toISOString(),
+        lastLoginAt: new Date().toISOString()
+      });
+    }
+  } catch (dbErr) {
+    console.error('[Auth] Database write failed:', dbErr);
+  }
+}
+
+async function handlePopupLogin(user) {
+  await saveUserToDatabase(user);
+  localStorage.setItem('coinxdrop_uid', user.uid);
+  closeLoginPopup();
+  showToast('Signed in successfully', 'success');
+  setTimeout(function() { window.location.reload(); }, 800);
+}
+
+async function popupSignInWithGoogle() {
+  hideLoginPopupError();
+  if (document.getElementById('popupGoogleBtn').disabled) return;
+  setPopupButtonLoading(true);
+
+  var provider = new firebase.auth.GoogleAuthProvider();
+  provider.addScope('email');
+  provider.addScope('profile');
+  provider.setCustomParameters({ prompt: 'select_account' });
+
+  try {
+    if (isMobileBrowser()) {
+      auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      await auth.signInWithRedirect(provider);
+    } else {
+      auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      var result = await auth.signInWithPopup(provider);
+      await handlePopupLogin(result.user);
+    }
+  } catch (err) {
+    console.error('[Auth] Sign-in error:', err);
+    setPopupButtonLoading(false);
+    showLoginPopupError(friendlyError(err));
+  }
+}
+
+function requireAuth(e) {
+  if (!currentUserId) {
+    e.preventDefault();
+    showLoginPopup();
+    return false;
+  }
+}
+
+function requireAuthAction() {
+  if (!currentUserId) {
+    showLoginPopup();
+    return false;
+  }
+  return true;
+}
+
+document.getElementById('popupGoogleBtn').addEventListener('click', popupSignInWithGoogle);
 
 function showToast(msg, type) {
   var c = document.getElementById('toastContainer');
@@ -679,7 +1025,7 @@ function timeAgo(timestamp) {
 }
 
 function toggleLike(postId, btn) {
-  if (!currentUserId) return;
+  if (!requireAuthAction()) return;
   var likeRef = db.ref('posts/' + postId + '/likes/' + currentUserId);
   likeRef.once('value', function(snap) {
     if (snap.exists()) {
@@ -704,7 +1050,7 @@ function updateLikeCount(postId) {
 }
 
 function toggleBookmark(postId, btn) {
-  if (!currentUserId) return;
+  if (!requireAuthAction()) return;
   var bmRef = db.ref('bookmarks/' + currentUserId + '/' + postId);
   bmRef.once('value', function(snap) {
     if (snap.exists()) {
@@ -730,6 +1076,7 @@ function setupDoubleTap(postId, wrap) {
       heart.classList.remove('show');
       void heart.offsetWidth;
       heart.classList.add('show');
+      if (!requireAuthAction()) return;
       var likeBtn = document.getElementById('like-btn-' + postId);
       if (likeBtn && !likeBtn.classList.contains('liked')) {
         toggleLike(postId, likeBtn);
@@ -741,6 +1088,7 @@ function setupDoubleTap(postId, wrap) {
     heart.classList.remove('show');
     void heart.offsetWidth;
     heart.classList.add('show');
+    if (!requireAuthAction()) return;
     var likeBtn = document.getElementById('like-btn-' + postId);
     if (likeBtn && !likeBtn.classList.contains('liked')) {
       toggleLike(postId, likeBtn);
@@ -752,18 +1100,20 @@ function renderPost(data, postId) {
   var isLiked = data.likes && data.likes[currentUserId];
   var likeCount = data.likes ? Object.keys(data.likes).length : 0;
 
-  db.ref('bookmarks/' + currentUserId + '/' + postId).once('value', function(snap) {
-    var bmBtn = document.getElementById('bm-btn-' + postId);
-    if (bmBtn && snap.exists()) {
-      bmBtn.classList.add('bookmarked');
-      bmBtn.innerHTML = '<i class="fas fa-bookmark"></i>';
-    }
-  });
+  if (currentUserId) {
+    db.ref('bookmarks/' + currentUserId + '/' + postId).once('value', function(snap) {
+      var bmBtn = document.getElementById('bm-btn-' + postId);
+      if (bmBtn && snap.exists()) {
+        bmBtn.classList.add('bookmarked');
+        bmBtn.innerHTML = '<i class="fas fa-bookmark"></i>';
+      }
+    });
+  }
 
   var commentsCount = data.comments ? Object.keys(data.comments).length : 0;
   var commentsPeek = '';
   if (commentsCount > 0) {
-    commentsPeek = '<div class="post-comments-peek">View all ' + commentsCount + ' comments</div>';
+    commentsPeek = '<div class="post-comments-peek" onclick="requireAuthAction()">View all ' + commentsCount + ' comments</div>';
   }
 
   var avatarSrc = data.userAvatar || 'https://picsum.photos/seed/' + data.username + '/100/100.jpg';
@@ -792,8 +1142,8 @@ function renderPost(data, postId) {
     '<div class="post-actions">' +
     '<div class="left">' +
     '<button id="like-btn-' + postId + '" class="' + (isLiked ? 'liked' : '') + '" onclick="toggleLike(\'' + postId + '\', this)"><i class="' + (isLiked ? 'fas' : 'far') + ' fa-heart"></i></button>' +
-    '<button><i class="far fa-comment"></i></button>' +
-    '<button><i class="far fa-paper-plane"></i></button>' +
+    '<button onclick="requireAuthAction()"><i class="far fa-comment"></i></button>' +
+    '<button onclick="requireAuthAction()"><i class="far fa-paper-plane"></i></button>' +
     '</div>' +
     '<button id="bm-btn-' + postId + '" onclick="toggleBookmark(\'' + postId + '\', this)"><i class="far fa-bookmark"></i></button>' +
     '</div>' +
@@ -878,17 +1228,32 @@ function checkMsgBtn() {
 }
 
 document.getElementById('notifBtn').addEventListener('click', function() {
+  if (!requireAuthAction()) return;
   showToast('Notifications opened', 'info');
 });
 
 document.getElementById('msgBtn').addEventListener('click', function() {
+  if (!requireAuthAction()) return;
   showToast('Messages opened', 'info');
 });
 
 initUser().then(function() {
   loadPosts();
-  checkNotifBtn();
-  checkMsgBtn();
+  if (currentUserId) {
+    checkNotifBtn();
+    checkMsgBtn();
+  }
+
+  auth.onAuthStateChanged(async function(user) {
+    if (user) {
+      var redirectResult = await auth.getRedirectResult().catch(function(){});
+      if (redirectResult && redirectResult.user) {
+        await handlePopupLogin(redirectResult.user);
+      } else if (!currentUserId) {
+        await handlePopupLogin(user);
+      }
+    }
+  });
 });
 </script>
 </body>
